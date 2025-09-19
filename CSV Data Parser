@@ -1,0 +1,80 @@
+import csv
+
+def parse_csv(file_path):
+    print("------ CSV Data Parser ------")
+    
+    valid_data = []
+    errors = []
+
+    try:
+        with open(file_path, mode="r", newline="", encoding="utf-8") as file:
+            reader = csv.DictReader(file)
+            
+            for i, row in enumerate(reader, start=2):  # start=2 → match CSV line numbers
+                if not row or all(v.strip() == "" for v in row.values()):  
+                    continue  # skip empty rows
+                
+                product_id = row.get("ProductID", "").strip()
+                name = row.get("ProductName", "").strip()
+                price = row.get("Price", "").strip()
+                quantity = row.get("Quantity", "").strip()
+                
+                if not product_id or not name or not price or not quantity:
+                    errors.append(f"Row {i}: Missing required fields.")
+                    continue
+                
+                try:
+                    price = float(price)
+                    quantity = int(quantity)
+                except ValueError:
+                    errors.append(f"Row {i}: Invalid price or quantity format.")
+                    continue
+                
+                if price < 0:
+                    errors.append(f"Row {i}: Negative price not allowed.")
+                    continue
+                if quantity < 0:
+                    errors.append(f"Row {i}: Negative quantity not allowed.")
+                    continue
+
+                valid_data.append({
+                    "ProductID": product_id,
+                    "ProductName": name,
+                    "Price": price,
+                    "Quantity": quantity
+                })
+
+    except FileNotFoundError:
+        print(f"❌ File not found: {file_path}")
+        return
+
+    total_products = len(valid_data)
+    total_stock_value = sum(item["Price"] * item["Quantity"] for item in valid_data)
+
+    print("\n------ Report ------")
+    print(f"✅ Total Valid Products: {total_products}")
+    print(f"💰 Total Stock Value: ₹{total_stock_value:.2f}")
+    print(f"⚠ Errors Found: {len(errors)}")
+
+    if errors:
+        print("\n------ Error Details ------")
+        for e in errors:
+            print(f"- {e}")
+
+
+if __name__ == "__main__":
+    # ✅ Step 1: Create a sample CSV file with test data
+    sample_data = """ProductID,ProductName,Price,Quantity
+101,Apple,50,10
+102,Banana,20,5
+103,Orange,25.5,8
+104,guava,12,7
+105,Grapes,65,15
+106,Mango,60,36
+107,Pineapple,80,3
+"""
+    with open("products.csv", "w", encoding="utf-8") as f:
+        f.write(sample_data)
+
+    # ✅ Step 2: Call the function
+    parse_csv("products.csv")
